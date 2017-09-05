@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"encoding/json"
+	"strconv"
 )
 
 /*
@@ -102,6 +103,18 @@ type JenkinsJobsLastBuildResponse struct {
 	} `json:"changeSet"`
 }
 
+type JenkinsBuildsJobResponse struct {
+	Class  string `json:"_class"`
+	Builds []struct {
+		Class     string `json:"_class"`
+		ID        string `json:"id"`
+		Number    int    `json:"number"`
+		QueueID   int    `json:"queueId"`
+		Result    string `json:"result"`
+		Timestamp int64  `json:"timestamp"`
+	} `json:"builds"`
+}
+
 type hTTPResponse struct {
 	Header 	http.Header
 	Body 		[]byte
@@ -184,8 +197,6 @@ func prepareJenkinsCall(project string, urlPath string, method string) hTTPRespo
 		for _, c := range Config {
 			if c.Project == project {
 				c.Crumb = crumb
-
-				fmt.Println("Get Jenkins Crumb - " + c.Crumb)
 			}
 		}
 	}
@@ -219,14 +230,13 @@ func GetJenkinsJobs(project string) JenkinsJobsResponse {
 	return jenkinsJobs
 }
 
-func JenkinsLastBuild(project string, job string) JenkinsJobsLastBuildResponse {
+func GetLastBuild(project string, job string) JenkinsJobsLastBuildResponse {
 	var lastBuildResp JenkinsJobsLastBuildResponse
 	var url string
 
 	url = fmt.Sprintf("/job/%s/lastBuild/api/json?pretty=true", job, "GET")
 
 	tempResp := prepareJenkinsCall("", url, "GET")
-
 	if err := json.Unmarshal(tempResp.Body, &lastBuildResp); err != nil {
 		panic(err)
 	}
@@ -234,12 +244,24 @@ func JenkinsLastBuild(project string, job string) JenkinsJobsLastBuildResponse {
 	return lastBuildResp
 }
 
-func JenkinsLastJobLogText(project string, job string) string {
+func GetJobLogs(project string, job string, number int) string {
 	var url string
 
-	url = fmt.Sprintf("/job/%s/lastBuild/consoleText", job, "GET")
-
+	url = fmt.Sprintf("/job/%s/%s/consoleText", job, strconv.Itoa(number))
 	tempResp := prepareJenkinsCall("", url, "GET")
 
 	return string(tempResp.Body)
+}
+
+func GetBuildsJob(project string, job string) JenkinsBuildsJobResponse {
+	var buildsJob JenkinsBuildsJobResponse
+	var url string
+
+	url = fmt.Sprintf("/job/%s/api/json?tree=builds[number,status,timestamp,id,queueId,result]", job)
+	tempResp := prepareJenkinsCall("", url, "GET")
+	if err := json.Unmarshal(tempResp.Body, &buildsJob); err != nil {
+		panic(err)
+	}
+
+	return buildsJob
 }
