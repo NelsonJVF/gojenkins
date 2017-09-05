@@ -20,8 +20,6 @@ type Configuration struct {
 	Crumb string `yaml:"crumb"` // Jenkins Crumb
 }
 
-var Config []Configuration
-
 /*
 	Get User Crumb Response
  */
@@ -104,10 +102,19 @@ type JenkinsJobsLastBuildResponse struct {
 	} `json:"changeSet"`
 }
 
+type hTTPResponse struct {
+	Header 	http.Header
+	Body 		[]byte
+}
+
+var Config []Configuration
+
 /*
 	Generic HTTP caller
  */
-func hTTPRequest(url string, user string, pass string, crumb string) []byte {
+func hTTPRequest(url string, method string, user string, pass string, crumb string) hTTPResponse {
+	var hTTPResp hTTPResponse
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("http.NewRequest err   #%v ", err)
@@ -130,10 +137,13 @@ func hTTPRequest(url string, user string, pass string, crumb string) []byte {
 		log.Printf("ioutil.ReadAll err   #%v ", err)
 	}
 
-	return body
+	hTTPResp.Header = resp.Header
+	hTTPResp.Body = body
+
+	return hTTPResp
 }
 
-func prepareJenkinsCall(project string, urlPath string) []byte {
+func prepareJenkinsCall(project string, urlPath string, method string) hTTPResponse {
 	var user string
 	var pass string
 	var url string
@@ -152,7 +162,10 @@ func prepareJenkinsCall(project string, urlPath string) []byte {
 
 	if(len(url) == 0) {
 		log.Printf(" ---------- Jenkins configuration is missing  ---------- ")
-		return nil
+		return hTTPResponse{
+			Header: nil,
+			Body: nil,
+		}
 	}
 
 	if(len(crumb) == 0) {
@@ -160,9 +173,9 @@ func prepareJenkinsCall(project string, urlPath string) []byte {
 		var crumbResp getCrumbResponse
 
 		urlCrumb := fmt.Sprintf("%s:%s%s", url, port, "/crumbIssuer/api/json")
-		bodyCrumb := hTTPRequest(urlCrumb, user, pass, "")
+		bodyCrumb := hTTPRequest(urlCrumb, "GET", user, pass, "")
 
-		if err := json.Unmarshal(bodyCrumb, &crumbResp); err != nil {
+		if err := json.Unmarshal(bodyCrumb.Body, &crumbResp); err != nil {
 			panic(err)
 		}
 
@@ -178,32 +191,27 @@ func prepareJenkinsCall(project string, urlPath string) []byte {
 	}
 
 	urlCall := fmt.Sprintf("%s:%s%s", url, port, urlPath)
-
-	callResp := hTTPRequest(urlCall, user, pass, "")
+	callResp := hTTPRequest(urlCall, method, user, pass, "")
 
 	return callResp
 }
 
-func RunJenkinsJob(project string, job string, parameters string) JenkinsJobsResponse {
-	var jenkinsJobs JenkinsJobsResponse
+func RunJenkinsJob(project string, job string, parameters string) string {
+	var returnJobId string
 
-	path := fmt.Sprintf("/api/json/job/%s/build?delay=0sec", job)
+	path := fmt.Sprintf("/job/%s/build?delay=0sec", job)
+	jobsResp := prepareJenkinsCall("", path, "POST")
+	returnJobId = jobsResp.Header.Get("Location")
 
-	jobsResp := prepareJenkinsCall("", path)
-
-	if err := json.Unmarshal(jobsResp, &jenkinsJobs); err != nil {
-		panic(err)
-	}
-
-	return jenkinsJobs
+	return returnJobId
 }
 
 func GetJenkinsJobs(project string) JenkinsJobsResponse {
 	var jenkinsJobs JenkinsJobsResponse
 
-	jobsResp := prepareJenkinsCall("", "/api/json?pretty=true")
+	jobsResp := prepareJenkinsCall("", "/api/json?pretty=true", "GET")
 
-	if err := json.Unmarshal(jobsResp, &jenkinsJobs); err != nil {
+	if err := json.Unmarshal(jobsResp.Body, &jenkinsJobs); err != nil {
 		panic(err)
 	}
 
@@ -214,11 +222,10 @@ func JenkinsLastBuild(project string, job string) JenkinsJobsLastBuildResponse {
 	var lastBuildResp JenkinsJobsLastBuildResponse
 	var url string
 
-	url = fmt.Sprintf("/job/%s/lastBuild/api/json?pretty=true", job)
+	url = fmt.Sprintf("/job/%s/lastBuild/api/json?pretty=true", job, "GET")
+	tempResp := prepareJenkinsCall("", url, "GET")
 
-	tempResp := prepareJenkinsCall("", url)
-
-	if err := json.Unmarshal(tempResp, &lastBuildResp); err != nil {
+	if err := json.Unmarshal(tempResp.Body, &lastBuildResp); err != nil {
 		panic(err)
 	}
 
@@ -228,9 +235,8 @@ func JenkinsLastBuild(project string, job string) JenkinsJobsLastBuildResponse {
 func JenkinsLastJobLogText(project string, job string) string {
 	var url string
 
-	url = fmt.Sprintf("/job/%s/lastBuild/consoleText", job)
+	url = fmt.Sprintf("/job/%s/lastBuild/consoleText", job, "GET")
+	tempResp := prepareJenkinsCall("", url, "GET")
 
-	tempResp := prepareJenkinsCall("", url)
-
-	return string(tempResp)
+	return string(tempResp.Body)
 }
