@@ -184,10 +184,10 @@ func prepareJenkinsCall(project string, urlPath string) []byte {
 	return callResp
 }
 
-func CallJenkinsJobs(project string, job string, parameters string) JenkinsJobsResponse {
+func RunJenkinsJobs(project string, job string, parameters string) JenkinsJobsResponse {
 	var jenkinsJobs JenkinsJobsResponse
 
-	path := fmt.Sprintf("/job/%s/build?delay=0sec", job)
+	path := fmt.Sprintf("/api/json/job/%s/build?delay=0sec", job)
 
 	jobsResp := prepareJenkinsCall("", path)
 

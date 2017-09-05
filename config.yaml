@@ -1,0 +1,12 @@
+- user: JenkinsDevTeamUser
+  pass: JenkinsDevTeamPass
+  url: http:/jenkins.devteam.com
+  port: 8080
+  project: DevTeam
+  crumb:
+- user: JenkinsProjectUser
+  pass: JenkinsProjectPass
+  url: http:/jenkins.projectteam.com
+  port: 8080
+  project: Project
+  crumb:
