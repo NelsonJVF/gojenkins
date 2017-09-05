@@ -115,7 +115,7 @@ var Config []Configuration
 func hTTPRequest(url string, method string, user string, pass string, crumb string) hTTPResponse {
 	var hTTPResp hTTPResponse
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		log.Printf("http.NewRequest err   #%v ", err)
 	}
@@ -191,7 +191,8 @@ func prepareJenkinsCall(project string, urlPath string, method string) hTTPRespo
 	}
 
 	urlCall := fmt.Sprintf("%s:%s%s", url, port, urlPath)
-	callResp := hTTPRequest(urlCall, method, user, pass, "")
+
+	callResp := hTTPRequest(urlCall, method, user, pass, crumb)
 
 	return callResp
 }
@@ -223,6 +224,7 @@ func JenkinsLastBuild(project string, job string) JenkinsJobsLastBuildResponse {
 	var url string
 
 	url = fmt.Sprintf("/job/%s/lastBuild/api/json?pretty=true", job, "GET")
+
 	tempResp := prepareJenkinsCall("", url, "GET")
 
 	if err := json.Unmarshal(tempResp.Body, &lastBuildResp); err != nil {
@@ -236,6 +238,7 @@ func JenkinsLastJobLogText(project string, job string) string {
 	var url string
 
 	url = fmt.Sprintf("/job/%s/lastBuild/consoleText", job, "GET")
+
 	tempResp := prepareJenkinsCall("", url, "GET")
 
 	return string(tempResp.Body)
