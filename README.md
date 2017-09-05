@@ -2,7 +2,7 @@
 
 GoJenkins is a basic and generic package to interact with Jenkins REST API.
 The idea of this package is to make your life easy, instead of learning the Jenkins REST API, you just need to set your configuration and get the information.
-All the methos available return an Go object with the smae struter of the response from Jenkins REST API.
+All the methods available return a Go object with the same structure of the response from Jenkins REST API.
 Fell free to add make comments and review the code.
 
 ## Install
@@ -40,7 +40,7 @@ gojenkins.RunJob()
 gojenkins.GetLogs()
 ```
 
-There is the full code to test it easly:
+Here is the full code to test it easily:
 
 ```go
 package main
@@ -72,13 +72,13 @@ func main() {
   fmt.Println("Calling Run Job method:")
 
   jogToRun := "deploy-application"
-  runJobResponse := gojira.RunJob(issueToSearch)
+  runJobResponse := gojenkins.GetJenkinsJobs(issueToSearch)
   fmt.Println(runJobResponse)
 
   fmt.Println("Calling RequestSearch method:")
 
   jobId := runJobResponse.id
-  getLogsResponse := gojira.GetLogs(jobId)
+  getLogsResponse := gojenkins.RunJenkinsJob(jobId)
   fmt.Println(getLogsResponse)
 }
 ```
