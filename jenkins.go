@@ -202,7 +202,6 @@ func prepareJenkinsCall(project string, urlPath string, method string) hTTPRespo
 	}
 
 	urlCall := fmt.Sprintf("%s:%s%s", url, port, urlPath)
-
 	callResp := hTTPRequest(urlCall, method, user, pass, crumb)
 
 	return callResp
@@ -210,8 +209,14 @@ func prepareJenkinsCall(project string, urlPath string, method string) hTTPRespo
 
 func RunJenkinsJob(project string, job string, parameters string) string {
 	var returnJobId string
+	var path string
 
-	path := fmt.Sprintf("/job/%s/build?delay=0sec", job)
+	if len(parameters) == 0 {
+		path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec", job)
+	} else {
+		path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec&%s", job, parameters)
+	}
+
 	jobsResp := prepareJenkinsCall("", path, "POST")
 	returnJobId = jobsResp.Header.Get("Location")
 
