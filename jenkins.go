@@ -170,6 +170,8 @@ func prepareJenkinsCall(project string, urlPath string, method string) hTTPRespo
 			url = c.Url
 			port = c.Port
 			crumb = c.Crumb
+			
+			break
 		}
 	}
 
