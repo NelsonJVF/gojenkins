@@ -170,7 +170,7 @@ func prepareJenkinsCall(project string, urlPath string, method string) hTTPRespo
 			url = c.Url
 			port = c.Port
 			crumb = c.Crumb
-			
+
 			break
 		}
 	}
@@ -219,7 +219,7 @@ func RunJenkinsJob(project string, job string, parameters string) string {
 		path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec&%s", job, parameters)
 	}
 
-	jobsResp := prepareJenkinsCall("", path, "POST")
+	jobsResp := prepareJenkinsCall(project, path, "POST")
 	returnJobId = jobsResp.Header.Get("Location")
 
 	return returnJobId
@@ -228,7 +228,7 @@ func RunJenkinsJob(project string, job string, parameters string) string {
 func GetJenkinsJobs(project string) JenkinsJobsResponse {
 	var jenkinsJobs JenkinsJobsResponse
 
-	jobsResp := prepareJenkinsCall("", "/api/json?pretty=true", "GET")
+	jobsResp := prepareJenkinsCall(project, "/api/json?pretty=true", "GET")
 
 	if err := json.Unmarshal(jobsResp.Body, &jenkinsJobs); err != nil {
 		panic(err)
@@ -243,7 +243,7 @@ func GetLastBuild(project string, job string) JenkinsJobsLastBuildResponse {
 
 	url = fmt.Sprintf("/job/%s/lastBuild/api/json?pretty=true", job, "GET")
 
-	tempResp := prepareJenkinsCall("", url, "GET")
+	tempResp := prepareJenkinsCall(project, url, "GET")
 	if err := json.Unmarshal(tempResp.Body, &lastBuildResp); err != nil {
 		panic(err)
 	}
@@ -255,7 +255,7 @@ func GetJobLogs(project string, job string, number int) string {
 	var url string
 
 	url = fmt.Sprintf("/job/%s/%s/consoleText", job, strconv.Itoa(number))
-	tempResp := prepareJenkinsCall("", url, "GET")
+	tempResp := prepareJenkinsCall(project, url, "GET")
 
 	return string(tempResp.Body)
 }
@@ -265,7 +265,7 @@ func GetBuildsJob(project string, job string) JenkinsBuildsJobResponse {
 	var url string
 
 	url = fmt.Sprintf("/job/%s/api/json?tree=builds[number,status,timestamp,id,queueId,result]", job)
-	tempResp := prepareJenkinsCall("", url, "GET")
+	tempResp := prepareJenkinsCall(project, url, "GET")
 	if err := json.Unmarshal(tempResp.Body, &buildsJob); err != nil {
 		panic(err)
 	}
