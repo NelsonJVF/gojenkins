@@ -33,10 +33,10 @@ func init() {
 After that you can simply use the methods available to interact with Jenkins:
 
 ```go
-// Get Jira issue information
+// Run Jenkins Job
 gojenkins.RunJob()
 
-// Search a string in Jira
+// Get Job Logs
 gojenkins.GetLogs()
 ```
 
@@ -93,11 +93,11 @@ url: http:/jenkins.dev.com:8080/
 
 ### GoJira methods
 
-We can get an issue information:
+We can run jenkins jobs:
 
 ```RunJob(issueId)```
 
-We can also search in Jira:
+We can also get the logs:
 
 ```GetLogs(query)```
 
