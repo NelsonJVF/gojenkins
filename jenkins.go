@@ -10,7 +10,7 @@ import (
 )
 
 /*
-	Struct for Jira access information
+	Struct for Jenkins access information
  */
 type Configuration struct {
 	User string `yaml:"user"` // Username for Jenkins
