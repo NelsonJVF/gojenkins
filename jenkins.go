@@ -202,7 +202,9 @@ func getCrumb(user string, pass string, url string, port string, urlExtraPath st
 	bodyCrumb := hTTPRequest(urlCrumb, "GET", user, pass, "", nil)
 
 	if err := json.Unmarshal(bodyCrumb.Body, &crumbResp); err != nil {
-		panic(err)
+		log.Println("Error getJenkinsCrumb()")
+		log.Println(string(bodyCrumb.Body))
+		return ""
 	}
 
 	crumb := crumbResp.Crumb
@@ -266,9 +268,9 @@ func RunJenkinsJob(project string, job string, parameters string) string {
 	var returnJobId string
 	var path string
 
-	if project == "SpecificJenkins" {
+	if project == "Specific" {
 		data := url.Values{}
-		data.Set("jenkinsVAR", parameters)
+		data.Set("multiline", parameters)
 
 		path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec", job)
 
@@ -296,7 +298,8 @@ func GetJenkinsJobs(project string) JenkinsJobsResponse {
 	jobsResp := prepareJenkinsCall(project, "/api/json?pretty=true", "GET", nil)
 
 	if err := json.Unmarshal(jobsResp.Body, &jenkinsJobs); err != nil {
-		panic(err)
+		log.Println("Error prepareJenkinsCall()")
+		log.Println(string(jobsResp.Body))
 	}
 
 	return jenkinsJobs
