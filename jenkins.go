@@ -309,8 +309,6 @@ func RunJenkinsJob(project string, job string, parameters string) (string, error
 			return "", err
 		}
 
-		fmt.Println(jobsResp.Header)
-
 		returnJobId = jobsResp.Header.Get("Location")
 	}
 
