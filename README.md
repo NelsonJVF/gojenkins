@@ -72,7 +72,7 @@ func main() {
   fmt.Println("Calling Run Job method:")
 
   jogToRun := "deploy-application"
-  runJobResponse := gojenkins.GetJenkinsJobs(issueToSearch)
+  runJobResponse := gojenkins.GetJenkinsJobs(jenkinsProject)
   fmt.Println(runJobResponse)
 
   fmt.Println("Calling RequestSearch method:")
