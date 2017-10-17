@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"bytes"
+	"time"
 )
 
 /*
@@ -22,6 +23,7 @@ type Configuration struct {
 	Port string `yaml:"port"` // Jenkins Port
 	Project string `yaml:"project"` // Some projects have more than one Jenkins instance, so just lable as you wish
 	Crumb string `yaml:"crumb"` // Jenkins Crumb
+	Timeout int `yaml:"timeout"` // Jenkins request timeout
 }
 
 /*
@@ -168,48 +170,57 @@ var Config []Configuration
 /*
 	Generic HTTP caller
  */
-func hTTPRequest(url string, method string, user string, pass string, crumb string, parameters url.Values) hTTPResponse {
+func hTTPRequest(url string, method string, user string, pass string, crumb string, timeout int, parameters url.Values) (hTTPResponse, error) {
 	var hTTPResp hTTPResponse
 
-	client := &http.Client{}
+	timeoutVal := time.Duration(time.Duration(timeout) * time.Second)
+	client := &http.Client{
+		Timeout: timeoutVal,
+	}
 	r, _ := http.NewRequest(method, url, bytes.NewBufferString(parameters.Encode()))
 
 	r.SetBasicAuth(user, pass)
 	r.Header.Set("Jenkins-Crumb", crumb)
-	//r.Header.Set("Content-Type", "application/json")
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, _ := client.Do(r)
+	resp, errDo := client.Do(r)
+	if errDo != nil {
+		log.Println(resp.Status)
+		return hTTPResp, errDo
+	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("ioutil.ReadAll err   #%v ", err)
+	body, errRead := ioutil.ReadAll(resp.Body)
+	if errRead != nil {
+		log.Printf("ioutil.ReadAll err   #%v ", errRead)
+		return hTTPResp, errRead
 	}
 
 	hTTPResp.Header = resp.Header
 	hTTPResp.Body = body
 
-	return hTTPResp
+	return hTTPResp, nil
 }
 
 /*
 	Get Jenkins Crumb
  */
-func getCrumb(user string, pass string, url string, port string, urlExtraPath string) string {
+func getCrumb(user string, pass string, url string, port string, timeout int, urlExtraPath string) (string, error) {
 	var crumbResp getCrumbResponse
 
 	urlCrumb := fmt.Sprintf("%s:%s%s%s", url, port, urlExtraPath, "/crumbIssuer/api/json")
-	bodyCrumb := hTTPRequest(urlCrumb, "GET", user, pass, "", nil)
+	resp, err := hTTPRequest(urlCrumb, "GET", user, pass, "", timeout, nil)
+	if err != nil {
+		return "", err
+	}
 
-	if err := json.Unmarshal(bodyCrumb.Body, &crumbResp); err != nil {
+	if err := json.Unmarshal(resp.Body, &crumbResp); err != nil {
 		log.Println("Error getJenkinsCrumb()")
-		log.Println(string(bodyCrumb.Body))
-		return ""
+		return "", err
 	}
 
 	crumb := crumbResp.Crumb
 
-	return crumb
+	return crumb, nil
 }
 
 /*
@@ -217,13 +228,16 @@ func getCrumb(user string, pass string, url string, port string, urlExtraPath st
 		- Get and Set Jenkins information
 		- Get and Set Crumb information
  */
-func prepareJenkinsCall(project string, urlPath string, method string, parameters url.Values) hTTPResponse {
+func prepareJenkinsCall(project string, urlPath string, method string, parameters url.Values) (hTTPResponse, error) {
 	var user string
 	var pass string
 	var url string
 	var urlExtraPath string
 	var port string
 	var crumb string
+	var timeout int
+	var err error
+	var resp hTTPResponse
 
 	for _, c := range Config {
 		if c.Project == project {
@@ -233,22 +247,23 @@ func prepareJenkinsCall(project string, urlPath string, method string, parameter
 			urlExtraPath = c.UrlExtraPath
 			port = c.Port
 			crumb = c.Crumb
+			timeout = c.Timeout
 
 			break
 		}
 	}
 
 	if(len(url) == 0) {
-		log.Printf(" ---------- Jenkins configuration is missing  ---------- ")
-		return hTTPResponse{
-			Header: nil,
-			Body: nil,
-		}
+		err := fmt.Errorf(" ---------- Jenkins configuration is missing  ---------- ")
+		return resp, err
 	}
 
 	if(len(crumb) == 0) {
 		// Get Jenkins Crumb for configured user
-		crumb = getCrumb(user, pass, url, port, urlExtraPath)
+		crumb, err = getCrumb(user, pass, url, port, timeout, urlExtraPath)
+		if err != nil {
+			return resp, err
+		}
 
 		for _, c := range Config {
 			if c.Project == project {
@@ -259,22 +274,30 @@ func prepareJenkinsCall(project string, urlPath string, method string, parameter
 
 	urlCall := fmt.Sprintf("%s:%s%s%s", url, port, urlExtraPath, urlPath)
 
-	callResp := hTTPRequest(urlCall, method, user, pass, crumb, parameters)
+	resp, err = hTTPRequest(urlCall, method, user, pass, crumb, timeout, parameters)
+	if err != nil {
+		return resp, err
+	}
 
-	return callResp
+	return resp, nil
 }
 
-func RunJenkinsJob(project string, job string, parameters string) string {
+func RunJenkinsJob(project string, job string, parameters string) (string, error) {
 	var returnJobId string
 	var path string
 
-	if project == "Specific" {
+	if project == "Production" {
 		data := url.Values{}
 		data.Set("multiline", parameters)
 
 		path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec", job)
 
-		jobsResp := prepareJenkinsCall(project, path, "POST", data)
+		jobsResp, err := prepareJenkinsCall(project, path, "POST", data)
+		if err != nil {
+			return "", err
+		}
+
+		fmt.Println(jobsResp.Header)
 
 		returnJobId = jobsResp.Header.Get("Location")
 	} else {
@@ -284,81 +307,106 @@ func RunJenkinsJob(project string, job string, parameters string) string {
 			path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec&%s", job, parameters)
 		}
 
-		jobsResp := prepareJenkinsCall(project, path, "POST", nil)
+		jobsResp, err := prepareJenkinsCall(project, path, "POST", nil)
+		if err != nil {
+			return "", err
+		}
+
+		fmt.Println(jobsResp.Header)
 
 		returnJobId = jobsResp.Header.Get("Location")
 	}
 
-	return returnJobId
+	return returnJobId, nil
 }
 
-func GetJenkinsJobs(project string) JenkinsJobsResponse {
+func GetJenkinsJobs(project string) (JenkinsJobsResponse, error) {
 	var jenkinsJobs JenkinsJobsResponse
 
-	jobsResp := prepareJenkinsCall(project, "/api/json?pretty=true", "GET", nil)
-
-	if err := json.Unmarshal(jobsResp.Body, &jenkinsJobs); err != nil {
-		log.Println("Error prepareJenkinsCall()")
-		log.Println(string(jobsResp.Body))
+	jobsResp, err := prepareJenkinsCall(project, "/api/json?pretty=true", "GET", nil)
+	if err != nil {
+		return jenkinsJobs, err
 	}
 
-	return jenkinsJobs
+	if err := json.Unmarshal(jobsResp.Body, &jenkinsJobs); err != nil {
+		return jenkinsJobs, err
+	}
+
+	return jenkinsJobs, nil
 }
 
-func GetLastBuild(project string, job string) JenkinsJobsLastBuildResponse {
+func GetLastBuild(project string, job string) (JenkinsJobsLastBuildResponse, error) {
 	var lastBuildResp JenkinsJobsLastBuildResponse
 	var url string
 
 	url = fmt.Sprintf("/job/%s/lastBuild/api/json?pretty=true", job, "GET")
 
-	lastBuildResponse := prepareJenkinsCall(project, url, "GET", nil)
-	if err := json.Unmarshal(lastBuildResponse.Body, &lastBuildResp); err != nil {
-		panic(err)
+	lastBuildResponse, errCall := prepareJenkinsCall(project, url, "GET", nil)
+	if errCall != nil {
+		return lastBuildResp, errCall
 	}
 
-	return lastBuildResp
+	if err := json.Unmarshal(lastBuildResponse.Body, &lastBuildResp); err != nil {
+		return lastBuildResp, err
+	}
+
+	return lastBuildResp, nil
 }
 
-func GetJobDetails(project string, job string, number int) JenkinsJobDetailsResponse {
+func GetJobDetails(project string, job string, number int) (JenkinsJobDetailsResponse, error) {
 	var jobDetailsResp JenkinsJobDetailsResponse
 	var url string
 
 	url = fmt.Sprintf("/job/%s/%s/api/json", job, strconv.Itoa(number))
 
-	jobDetailsResponse := prepareJenkinsCall(project, url, "GET", nil)
-	if err := json.Unmarshal(jobDetailsResponse.Body, &jobDetailsResp); err != nil {
-		panic(err)
+	jobDetailsResponse, errCall := prepareJenkinsCall(project, url, "GET", nil)
+	if errCall != nil {
+		return jobDetailsResp, errCall
 	}
 
-	return jobDetailsResp
+	if err := json.Unmarshal(jobDetailsResponse.Body, &jobDetailsResp); err != nil {
+		return jobDetailsResp, err
+	}
+
+	return jobDetailsResp, nil
 }
 
-func GetJobLogs(project string, job string, number int) string {
+func GetJobLogs(project string, job string, number int) (string, error) {
 	var url string
 
 	url = fmt.Sprintf("/job/%s/%s/consoleText", job, strconv.Itoa(number))
-	tempResp := prepareJenkinsCall(project, url, "GET", nil)
+	tempResp, errCall := prepareJenkinsCall(project, url, "GET", nil)
+	if errCall != nil {
+		return "", errCall
+	}
 
-	return string(tempResp.Body)
+	return string(tempResp.Body), nil
 }
 
-func GetBuildsJob(project string, job string) JenkinsBuildsJobResponse {
+func GetBuildsJob(project string, job string) (JenkinsBuildsJobResponse, error) {
 	var buildsJob JenkinsBuildsJobResponse
 	var url string
 
 	url = fmt.Sprintf("/job/%s/api/json?tree=builds[number,status,timestamp,id,queueId,result]", job)
-	tempResp := prepareJenkinsCall(project, url, "GET", nil)
-	if err := json.Unmarshal(tempResp.Body, &buildsJob); err != nil {
-		panic(err)
+	tempResp, errCall := prepareJenkinsCall(project, url, "GET", nil)
+	if errCall != nil {
+		return buildsJob, errCall
 	}
 
-	return buildsJob
+	if err := json.Unmarshal(tempResp.Body, &buildsJob); err != nil {
+		return buildsJob, err
+	}
+
+	return buildsJob, nil
 }
 
 func GetJobIdFromBuild(project string, job string, buildId int) int {
 	var jobId int
 
-	resp := GetBuildsJob(project, job)
+	resp, err := GetBuildsJob(project, job)
+	if err != nil {
+		log.Println(err)
+	}
 
 	for _, build := range resp.Builds {
 		if build.QueueID == buildId {
