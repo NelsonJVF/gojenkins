@@ -185,7 +185,6 @@ func hTTPRequest(url string, method string, user string, pass string, crumb stri
 
 	resp, errDo := client.Do(r)
 	if errDo != nil {
-		log.Println(resp.Status)
 		return hTTPResp, errDo
 	}
 
@@ -296,8 +295,6 @@ func RunJenkinsJob(project string, job string, parameters string) (string, error
 		if err != nil {
 			return "", err
 		}
-
-		fmt.Println(jobsResp.Header)
 
 		returnJobId = jobsResp.Header.Get("Location")
 	} else {
