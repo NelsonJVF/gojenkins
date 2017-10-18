@@ -281,36 +281,18 @@ func prepareJenkinsCall(project string, urlPath string, method string, parameter
 	return resp, nil
 }
 
-func RunJenkinsJob(project string, job string, parameters string) (string, error) {
+func RunJenkinsJob(project string, job string, parameters url.Values) (string, error) {
 	var returnJobId string
 	var path string
 
-	if project == "Production" {
-		data := url.Values{}
-		data.Set("multiline", parameters)
+	path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec", job)
 
-		path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec", job)
-
-		jobsResp, err := prepareJenkinsCall(project, path, "POST", data)
-		if err != nil {
-			return "", err
-		}
-
-		returnJobId = jobsResp.Header.Get("Location")
-	} else {
-		if len(parameters) == 0 {
-			path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec", job)
-		} else {
-			path = fmt.Sprintf("/job/%s/buildWithParameters?delay=0sec&%s", job, parameters)
-		}
-
-		jobsResp, err := prepareJenkinsCall(project, path, "POST", nil)
-		if err != nil {
-			return "", err
-		}
-
-		returnJobId = jobsResp.Header.Get("Location")
+	jobsResp, err := prepareJenkinsCall(project, path, "POST", parameters)
+	if err != nil {
+		return "", err
 	}
+
+	returnJobId = jobsResp.Header.Get("Location")
 
 	return returnJobId, nil
 }
