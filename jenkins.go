@@ -12,9 +12,7 @@ import (
 	"time"
 )
 
-/*
-	Struct for Jenkins access information
- */
+// Configuration is struct for Jenkins access information
 type Configuration struct {
 	User string `yaml:"user"` // Username for Jenkins
 	Pass string `yaml:"pass"` // Password from Jenkins Username
@@ -26,18 +24,14 @@ type Configuration struct {
 	Timeout int `yaml:"timeout"` // Jenkins request timeout
 }
 
-/*
-	Get User Crumb Response
- */
+// getCrumbResponse is a struct to get the user crumb response
 type getCrumbResponse struct {
 	Class             string `json:"_class"`
 	Crumb             string `json:"crumb"`
 	CrumbRequestField string `json:"crumbRequestField"`
 }
 
-/*
-	Get Jenkings Jobs Response
- */
+// JenkinsJobsResponse is a struct for Jenkins Jobs Response
 type JenkinsJobsResponse struct {
 	Class          string `json:"_class"`
 	AssignedLabels []struct {
@@ -74,6 +68,7 @@ type JenkinsJobsResponse struct {
 	} `json:"views"`
 }
 
+// JenkinsJobsLastBuildResponse is a struct for Jenkins Jobs Last Build esponse
 type JenkinsJobsLastBuildResponse struct {
 	Class   string `json:"_class"`
 	Actions []struct {
@@ -108,6 +103,7 @@ type JenkinsJobsLastBuildResponse struct {
 	} `json:"changeSet"`
 }
 
+// JenkinsBuildsJobResponse is a struct for Jenkins Builds Job esponse
 type JenkinsBuildsJobResponse struct {
 	Class  string `json:"_class"`
 	Builds []struct {
@@ -120,6 +116,7 @@ type JenkinsBuildsJobResponse struct {
 	} `json:"builds"`
 }
 
+// JenkinsJobDetailsResponse is a struct for Jenkins Job Details esponse
 type JenkinsJobDetailsResponse struct {
 	Class   string `json:"_class"`
 	Actions []struct {
@@ -160,16 +157,16 @@ type JenkinsJobDetailsResponse struct {
 	Culprits []interface{} `json:"culprits"`
 }
 
+// hTTPResponse is a struct for the http response
 type hTTPResponse struct {
 	Header 	http.Header
 	Body 		[]byte
 }
 
+// Config is a variable to store the Jenkins server information
 var Config []Configuration
 
-/*
-	Generic HTTP caller
- */
+// hTTPRequest is generic HTTP caller
 func hTTPRequest(url string, method string, user string, pass string, crumb string, timeout int, parameters url.Values) (hTTPResponse, error) {
 	var hTTPResp hTTPResponse
 
@@ -200,9 +197,7 @@ func hTTPRequest(url string, method string, user string, pass string, crumb stri
 	return hTTPResp, nil
 }
 
-/*
-	Get Jenkins Crumb
- */
+// getCrumb is a function to get the jenkins user crumb
 func getCrumb(user string, pass string, url string, port string, timeout int, urlExtraPath string) (string, error) {
 	var crumbResp getCrumbResponse
 
@@ -222,16 +217,12 @@ func getCrumb(user string, pass string, url string, port string, timeout int, ur
 	return crumb, nil
 }
 
-/*
-	Prepare Jenkins Call
-		- Get and Set Jenkins information
-		- Get and Set Crumb information
- */
+// prepareJenkinsCall is a function to call jenkins rest api
 func prepareJenkinsCall(project string, urlPath string, method string, parameters url.Values) (hTTPResponse, error) {
-	var user string
-	var pass string
-	var url string
-	var urlExtraPath string
+	var username string
+	var password string
+	var URL string
+	var URLExtraPath string
 	var port string
 	var crumb string
 	var timeout int
@@ -240,10 +231,10 @@ func prepareJenkinsCall(project string, urlPath string, method string, parameter
 
 	for _, c := range Config {
 		if c.Project == project {
-			user = c.User
-			pass = c.Pass
-			url = c.Url
-			urlExtraPath = c.UrlExtraPath
+			username = c.User
+			password = c.Pass
+			URL = c.Url
+			URLExtraPath = c.UrlExtraPath
 			port = c.Port
 			crumb = c.Crumb
 			timeout = c.Timeout
@@ -259,7 +250,7 @@ func prepareJenkinsCall(project string, urlPath string, method string, parameter
 
 	if(len(crumb) == 0) {
 		// Get Jenkins Crumb for configured user
-		crumb, err = getCrumb(user, pass, url, port, timeout, urlExtraPath)
+		crumb, err = getCrumb(username, password, URL, port, timeout, URLExtraPath)
 		if err != nil {
 			return resp, err
 		}
@@ -271,9 +262,9 @@ func prepareJenkinsCall(project string, urlPath string, method string, parameter
 		}
 	}
 
-	urlCall := fmt.Sprintf("%s:%s%s%s", url, port, urlExtraPath, urlPath)
+	urlCall := fmt.Sprintf("%s:%s%s%s", URL, port, URLExtraPath, urlPath)
 
-	resp, err = hTTPRequest(urlCall, method, user, pass, crumb, timeout, parameters)
+	resp, err = hTTPRequest(urlCall, method, username, password, crumb, timeout, parameters)
 	if err != nil {
 		return resp, err
 	}
@@ -281,6 +272,7 @@ func prepareJenkinsCall(project string, urlPath string, method string, parameter
 	return resp, nil
 }
 
+// RunJenkinsJob is a function to run a jenkins job
 func RunJenkinsJob(project string, job string, parameters url.Values) (string, error) {
 	var returnJobId string
 	var path string
@@ -297,6 +289,7 @@ func RunJenkinsJob(project string, job string, parameters url.Values) (string, e
 	return returnJobId, nil
 }
 
+// GetJenkinsJobs is a function to get jenkins logs
 func GetJenkinsJobs(project string) (JenkinsJobsResponse, error) {
 	var jenkinsJobs JenkinsJobsResponse
 
@@ -312,13 +305,14 @@ func GetJenkinsJobs(project string) (JenkinsJobsResponse, error) {
 	return jenkinsJobs, nil
 }
 
+// GetLastBuild is a function to get the last build
 func GetLastBuild(project string, job string) (JenkinsJobsLastBuildResponse, error) {
 	var lastBuildResp JenkinsJobsLastBuildResponse
-	var url string
+	var URL string
 
-	url = fmt.Sprintf("/job/%s/lastBuild/api/json?pretty=true", job, "GET")
+	URL = fmt.Sprintf("/job/%s/lastBuild/api/json?pretty=true", job)
 
-	lastBuildResponse, errCall := prepareJenkinsCall(project, url, "GET", nil)
+	lastBuildResponse, errCall := prepareJenkinsCall(project, URL, "GET", nil)
 	if errCall != nil {
 		return lastBuildResp, errCall
 	}
@@ -330,13 +324,14 @@ func GetLastBuild(project string, job string) (JenkinsJobsLastBuildResponse, err
 	return lastBuildResp, nil
 }
 
+// GetJobDetails is a function to get job details
 func GetJobDetails(project string, job string, number int) (JenkinsJobDetailsResponse, error) {
 	var jobDetailsResp JenkinsJobDetailsResponse
-	var url string
+	var URL string
 
-	url = fmt.Sprintf("/job/%s/%s/api/json", job, strconv.Itoa(number))
+	URL = fmt.Sprintf("/job/%s/%s/api/json", job, strconv.Itoa(number))
 
-	jobDetailsResponse, errCall := prepareJenkinsCall(project, url, "GET", nil)
+	jobDetailsResponse, errCall := prepareJenkinsCall(project, URL, "GET", nil)
 	if errCall != nil {
 		return jobDetailsResp, errCall
 	}
@@ -348,11 +343,12 @@ func GetJobDetails(project string, job string, number int) (JenkinsJobDetailsRes
 	return jobDetailsResp, nil
 }
 
+// GetJobLogs is a function to get job logs
 func GetJobLogs(project string, job string, number int) (string, error) {
-	var url string
+	var URL string
 
-	url = fmt.Sprintf("/job/%s/%s/consoleText", job, strconv.Itoa(number))
-	tempResp, errCall := prepareJenkinsCall(project, url, "GET", nil)
+	URL = fmt.Sprintf("/job/%s/%s/consoleText", job, strconv.Itoa(number))
+	tempResp, errCall := prepareJenkinsCall(project, URL, "GET", nil)
 	if errCall != nil {
 		return "", errCall
 	}
@@ -360,12 +356,13 @@ func GetJobLogs(project string, job string, number int) (string, error) {
 	return string(tempResp.Body), nil
 }
 
+// GetBuildsJob is a function to get builds from a given job
 func GetBuildsJob(project string, job string) (JenkinsBuildsJobResponse, error) {
 	var buildsJob JenkinsBuildsJobResponse
-	var url string
+	var URL string
 
-	url = fmt.Sprintf("/job/%s/api/json?tree=builds[number,status,timestamp,id,queueId,result]", job)
-	tempResp, errCall := prepareJenkinsCall(project, url, "GET", nil)
+	URL = fmt.Sprintf("/job/%s/api/json?tree=builds[number,status,timestamp,id,queueId,result]", job)
+	tempResp, errCall := prepareJenkinsCall(project, URL, "GET", nil)
 	if errCall != nil {
 		return buildsJob, errCall
 	}
@@ -377,6 +374,7 @@ func GetBuildsJob(project string, job string) (JenkinsBuildsJobResponse, error) 
 	return buildsJob, nil
 }
 
+// GetJobIdFromBuild is a function to get the job id from a given build
 func GetJobIdFromBuild(project string, job string, buildId int) int {
 	var jobId int
 
