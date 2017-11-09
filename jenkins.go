@@ -243,7 +243,7 @@ func prepareJenkinsCall(project string, urlPath string, method string, parameter
 		}
 	}
 
-	if(len(url) == 0) {
+	if(len(URL) == 0) {
 		err := fmt.Errorf(" ---------- Jenkins configuration is missing  ---------- ")
 		return resp, err
 	}
