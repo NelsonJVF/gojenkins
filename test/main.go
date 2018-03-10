@@ -1,35 +1,27 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
 	"log"
 
 	"github.com/nelsonjvf/gojenkins/pkg"
-	"gopkg.in/yaml.v2"
 )
-
-func init() {
-	// Use yaml configuration file
-	yamlFile, err := ioutil.ReadFile("config.yaml")
-	if err != nil {
-		log.Printf("yamlFile.Get err   #%v ", err)
-	}
-
-	err = yaml.Unmarshal(yamlFile, &gojenkins.Config)
-	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
-	}
-}
 
 func main() {
 
-	fmt.Println("Staring Testing..")
-	fmt.Println("Setting Configuration")
+	var jenkinsURL = "http://jira-server.com/"
+	var jenkinsUsername = "my-jira-user"
+	var jenkinsPassword = "my-jira-password"
 
-	fmt.Println(gojenkins.Config)
+	log.Println("Staring Testing..")
 
-	gojenkins.RunJob("Test Jenkins Server", "Run Application X", nil)
-	gojenkins.GetJobLogs("Project", "Run Application X", 1)
+	var jenkinsJobName = "MyJenkinsJob"
+
+	log.Println("Staring Jenkins Job - ", jenkinsJobName)
+	gojenkins.RunJob(jenkinsURL, jenkinsUsername, jenkinsPassword, jenkinsJobName, nil)
+
+	var buildNumber = 1
+
+	log.Println("Staring Jenkins Job - ", jenkinsJobName)
+	gojenkins.GetJobLogs(jenkinsURL, jenkinsUsername, jenkinsPassword, jenkinsJobName, buildNumber)
 
 }

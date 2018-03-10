@@ -13,31 +13,31 @@ go get github.com/nelsonjvf/gojenkins/pkg
 
 ## Usage and Examples
 
-First of all we need to configure and set your Jenkins information. For that we can use our config.yaml file as example and the following init function:
+Simply use the methods available to interact with Jenkins:
 
 ```go
-func init() {
-	// Use yaml configuration file
-	yamlFile, err := ioutil.ReadFile("config.yaml")
-	if err != nil {
-		log.Printf("yamlFile.Get err   #%v ", err)
-	}
 
-	err = yaml.Unmarshal(yamlFile, &gojira.Config)
-	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
-	}
-}
-```
-
-After that you can simply use the methods available to interact with Jenkins:
-
-```go
 // Run Jenkins Job
-gojenkins.RunJob()
+func RunJob(URL, username, password, job, parameters)
 
-// Get Job Logs
-gojenkins.GetLogs()
+// Get jenkins logs
+func GetJobs(URL, username, password)
+
+// Get the last build
+func GetLastBuild(URL, username, password, job)
+
+// Get job details
+func GetJobDetails(URL, username, password, job, number)
+
+// Get job logs
+func GetJobLogs(URL, username, password, job, number)
+
+// Geet builds from a given job
+func GetBuildsJob(URL, username, password, job)
+
+// Get the job id from a given build
+func GetJobIDFromBuild(URL, username, password, job, buildID)
+
 ```
 
 Here is the full code to test it easily:
@@ -46,60 +46,42 @@ Here is the full code to test it easily:
 package main
 
 import (
-	"fmt"
-	"github.com/nelsonjvf/gojenkins"
-	"io/ioutil"
 	"log"
-	"gopkg.in/yaml.v2"
+
+	"github.com/nelsonjvf/gojenkins"
 )
 
-func init() {
-	// Use yaml configuration file
-	yamlFile, err := ioutil.ReadFile("config.yaml")
-	if err != nil {
-		log.Printf("yamlFile.Get err   #%v ", err)
-	}
-
-	err = yaml.Unmarshal(yamlFile, &gojira.Config)
-	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
-	}
-}
-
 func main() {
-  fmt.Println("Starting test..")
+	
+	log.Println("Run jenkins job..")
 
-  fmt.Println("Calling Run Job method:")
+	jogToRun := "deploy-application"
+	getJobsResponse := gojenkins.RunJob(jenkinsURL, jenkinsUsername, jenkinsPassword, jogToRun)
+	log.Println("Build ID - ", getJobsResponse)
 
-  jogToRun := "deploy-application"
-  getJobsResponse := gojenkins.GetJenkinsJobs(jenkinsProject)
-  fmt.Println(getJobsResponse)
+	log.Println("Get jenkins job log..")
 
-  fmt.Println("Calling RequestSearch method:")
+	buildID := runJobResponse.id
+	getLogsResponse := gojenkins.GetJobLogs(jenkinsURL, jenkinsUsername, jenkinsPassword, jogToRun, buildID)
+	log.Println("Logs:")
+	log.Println(getLogsResponse)
 
-  jobId := runJobResponse.id
-  getLogsResponse := gojenkins.RunJenkinsJob(jobId)
-  fmt.Println(getLogsResponse)
 }
 ```
 
-Don't forget your yaml configuration file
-
-```yaml
-user: JenkinsUser
-pass: JenkinsPass
-url: http:/jenkins.dev.com:8080/
-```
-
-### GoJira methods
+### Go Jenkins methods
 
 We can run jenkins jobs:
 
-```RunJob(issueId)```
+```RunJob(JenkinsURL, JenkinsUsername, JenkinsPassword, JobName)```
 
 We can also get the logs:
 
-```GetLogs(query)```
+```GetJobLogs(JenkinsURL, JenkinsUsername, JenkinsPassword, JobName, buildID)```
+
+Get last build from job:
+
+```GetLastBuild(JenkinsURL, JenkinsUsername, JenkinsPassword, JobName)```
 
 ## Credits
 
