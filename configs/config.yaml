@@ -1,0 +1,8 @@
+- lable: Dev Team
+  user: JiraDevTeamUser
+  pass: JiraDevTeamPass
+  url: http:/dev.team.jira.com:8080/
+- lable: Project
+  user: JiraProjectUser
+  pass: JiraProjectPass
+  url: http:/project.team.jira.com:8080/

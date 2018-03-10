@@ -8,7 +8,7 @@ Fell free to add make comments and review the code.
 ## Install
 
 ```bash
-go get github.com/nelsonjvf/gojenkins
+go get github.com/nelsonjvf/gojenkins/pkg
 ```
 
 ## Usage and Examples
