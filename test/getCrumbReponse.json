@@ -1,0 +1,5 @@
+{
+    "_class": "hudson.security.csrf.DefaultCrumbIssuer",
+    "crumb": "d80f000b98829cec7d55941efafd0407",
+    "crumbRequestField": "Jenkins-Crumb"
+}

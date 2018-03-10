@@ -1,8 +1,8 @@
-# GoJenkins [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/nelsonjvf/gojenkins) [![Build Status](http://img.shields.io/travis/fatih/structs.svg?style=flat-square)]() [![Coverage Status](http://img.shields.io/coveralls/fatih/structs.svg?style=flat-square)]()
+# GoJenkins
 
 GoJenkins is a basic and generic package to interact with Jenkins REST API.
 The idea of this package is to make your life easy, instead of learning the Jenkins REST API, you just need to set your configuration and get the information.
-All the methos available return an Go object with the smae struter of the response from Jenkins REST API.
+All the methods available return a Go object with the same structure of the response from Jenkins REST API.
 Fell free to add make comments and review the code.
 
 ## Install
@@ -33,14 +33,14 @@ func init() {
 After that you can simply use the methods available to interact with Jenkins:
 
 ```go
-// Get Jira issue information
+// Run Jenkins Job
 gojenkins.RunJob()
 
-// Search a string in Jira
+// Get Job Logs
 gojenkins.GetLogs()
 ```
 
-There is the full code to test it easly:
+Here is the full code to test it easily:
 
 ```go
 package main
@@ -72,13 +72,13 @@ func main() {
   fmt.Println("Calling Run Job method:")
 
   jogToRun := "deploy-application"
-  runJobResponse := gojira.RunJob(issueToSearch)
-  fmt.Println(runJobResponse)
+  getJobsResponse := gojenkins.GetJenkinsJobs(jenkinsProject)
+  fmt.Println(getJobsResponse)
 
   fmt.Println("Calling RequestSearch method:")
 
   jobId := runJobResponse.id
-  getLogsResponse := gojira.GetLogs(jobId)
+  getLogsResponse := gojenkins.RunJenkinsJob(jobId)
   fmt.Println(getLogsResponse)
 }
 ```
@@ -93,11 +93,11 @@ url: http:/jenkins.dev.com:8080/
 
 ### GoJira methods
 
-We can get an issue information:
+We can run jenkins jobs:
 
 ```RunJob(issueId)```
 
-We can also search in Jira:
+We can also get the logs:
 
 ```GetLogs(query)```
 
