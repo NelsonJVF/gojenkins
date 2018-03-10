@@ -1,4 +1,4 @@
-# GoJenkins [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://godoc.org/github.com/NelsonJVF/gojenkins/pkg)
+# GoJenkins [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://godoc.org/github.com/NelsonJVF/gojenkins/pkg) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2b60d402321e42fdbc73e5a33a0a31e8)](https://www.codacy.com/app/NelsonJVF/gojenkins?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=NelsonJVF/gojenkins&amp;utm_campaign=Badge_Grade)
 
 GoJenkins is a basic and generic package to interact with Jenkins REST API.
 The idea of this package is to make your life easy, instead of learning the Jenkins REST API, you just need to set your configuration and get the information.

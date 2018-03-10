@@ -1,8 +1,0 @@
-- lable: Test Jira Env
-  user: TestUser
-  pass: 12345pass!
-  url: "http://localhost:8080/"
-- lable: Test Jira Env 2
-  user: TestUser
-  pass: 12345pass!
-  url: "http://localhost:8080/"
