@@ -29,7 +29,7 @@ func main() {
 
 	fmt.Println(gojenkins.Config)
 
-	gojenkins..RunJob("Test Jenkins Server", "Run Application X")
-	gojenkins.RequestSearch("Project", "Bug with string")
+	gojenkins.RunJob("Test Jenkins Server", "Run Application X", nil)
+	gojenkins.GetJobLogs("Project", "Run Application X", 1)
 
 }
